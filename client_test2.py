@@ -1,6 +1,5 @@
 import socket
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(("22.22.22.22", 5002))
+
 
 def send_image(img_name):
         with open(img_name, 'rb') as img:
@@ -20,6 +19,9 @@ def send_image(img_name):
             if reply == "IMAGE RECEIVED":
                 print ("IMAGE SENT SUCCESSFULLY")
                 return 1
-
-send_image('aloeL.jpg')
-client_socket.close()
+try:
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect(("22.22.22.22", 5002))
+        send_image('aloeL.jpg')
+finally:
+        client_socket.close()

@@ -1,17 +1,6 @@
 import socket
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind(("22.22.22.22", 5002))
-server_socket.listen(5)
-
-chunk_size = 1024
-
-client_socket, address = server_socket.accept()
-print ("Conencted to - ",address,"\n")
-
 def receive_image():
-    try:
         received = False
         print ("Waiting for client to send data")
         data = client_socket.recv(1024)
@@ -39,13 +28,22 @@ def receive_image():
                 client_socket.close()
                 server_socket.close()
                 print ("Closed connection securely")
-        return received
+        return img_path if received else 0
 
-    except KeyboardInterrupt:
-        client_socket.close()
-        server_socket.close()
-        print ("Closed connection securely")
 
-        return received
+try:
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind(("22.22.22.22", 5002))
+    server_socket.listen(5)
 
-receive_image()
+    chunk_size = 1024
+    client_socket, address = server_socket.accept()
+    print ("Conencted to - ",address,"\n")
+
+    receive_image()
+    
+finally:
+    client_socket.close()
+    server_socket.close()
+    print ("Closed connection securely")

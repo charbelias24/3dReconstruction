@@ -1,7 +1,10 @@
 import numpy as np
 import cv2
 
-def undistort_img(img, objpoints, imgpoints):
+objpoints = np.load('data/objpoints.npy')
+imgpoints = np.load('data/imgpoints.npy')
+
+def undistort_img(img, objpoints=objpoints, imgpoints=imgpoints):
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
 
@@ -16,9 +19,6 @@ def undistort_img(img, objpoints, imgpoints):
     return dst
 
 if __name__=="__main__":
-    objpoints = np.load('objpoints.npy')
-    imgpoints = np.load('imgpoints.npy')
-
     img = cv2.imread('test_images/calibrate7.jpg')
 
     undistorted_image = undistort_img(img, objpoints, imgpoints)

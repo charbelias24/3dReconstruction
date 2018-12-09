@@ -1,23 +1,21 @@
 # TCP client example
-import socket,os
+import socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(("169.254.159.161", 5005))
-k = ' '
-size = 1024
+client_socket.connect(("22.22.22.22", 5000))
 
-while(1):
+while True:
     try:
         raw_input()
         command = "SEND"
         client_socket.send(command)
         
         print ("\nThe file will be saved and opened- ")
-        fname = 'test1.jpg'
-        with open(fname, 'wb') as nf:
+        fname = 'test_images/test2.jpg'
+        with open(fname, 'wb') as file:
             while True:
                 strng = client_socket.recv(2097152)
                 if not strng:
                     break
-                nf.write(strng)
+                file.write(strng)
     except KeyboardInterrupt:
-        pass
+        client_socket.close()

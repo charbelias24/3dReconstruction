@@ -1,13 +1,14 @@
 import socket
+
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(("169.254.159.161", 5000))
+server_socket.bind(("22.22.22.22", 5000))
 server_socket.listen(5)
-import os
 
 
 client_socket, address = server_socket.accept()
 print ("Conencted to - ",address,"\n")
-while (1):
+
+while True:
     try:
         data = client_socket.recv(1024)
         img_name = 'test1.jpg'

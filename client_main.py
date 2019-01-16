@@ -1,0 +1,87 @@
+## THIS IS THE REFACTORED CODE OF THE PREVIOUS RUNNING FILE ON CLIENT RPI
+
+import socket
+import time
+import RPi.GPIO as GPIO
+from picamera import PiCamera
+
+class SendImageToServer():
+    """ Take and send images to the server on the press of a button"""
+    def __init__(self):
+        try:
+            port = 5002
+            host_ip = "22.22.22.22"
+
+            self.camera = PiCamera()
+            self.camera.resolution = (640, 480)
+            self.image_name = 'slave'
+            self.image_path = 'test_images/'
+            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client_socket.connect((host_ip, port))
+        except Exception as e:
+            print(e)
+
+    def __del__(self):
+        self.client_socket.close()
+
+    def receive_name(self):
+        image_count = self.client_socket.recv(1024)
+        self.client_socket.send("RECEIVED")
+        print ("RECEIVED NAME")
+        self.image_name += image_count + '.jpg'
+
+    def take_picture(self):
+        self.camera.capture(self.image_path + self.image_name)
+        print ("TAKING PICTURE")
+
+    def send_image(self):
+        self.image_path += self.image_name
+
+        with open(self.image_path, 'rb') as image:
+            image_bytes = image.read()
+            self.client_socket.send("SIZE " + str(len(image_bytes)))
+            reply = self.client_socket.recv(1024)
+            if reply != "GOT SIZE":
+                return 0
+            print ("SENT SIZE")
+
+            self.client_socket.send(image_bytes)
+            self.client_socket.send("DONE")
+
+        print ("DONE")
+        reply = self.client_socket.recv(1024)
+        if reply == "IMAGE RECEIVED":
+                print ("IMAGE SENT SUCCESSFULLY")
+                return 1
+
+    def run(self):
+        """ After being connected to the server, get the image name and then take
+        a picture and send it to the server"""
+        self.receive_name()
+        self.take_picture()
+        self.send_image()
+
+
+
+def main():
+    """ Waits for the press of a button and executes accordingly"""
+    ## setting the pin number of the Button
+    btn_pin = 7
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(btn_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    image_to_server = SendImageToServer()
+
+    try:
+        while True:
+            ## Checking if the button is pressed
+            if GPIO.input(btn_pin):
+                image_to_server.run()
+                time.sleep(0.5)
+            time.sleep(0.01)
+    except Exception as e:
+        print(e)
+    finally:
+        del image_to_server
+
+if __name__ == "__main__":
+    main()

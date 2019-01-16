@@ -14,8 +14,8 @@ class Server():
         red_led_pin = 11
         green_led_pin = 13
 
-        self.server_image_name = 'left'
-        self.client_image_name = 'right'
+        self.server_image_prefix = 'left'
+        self.client_image_prefix = 'right'
         self.image_path = 'test_images/'
         self.image_count = ''
         self.image_extension = '.jpg'
@@ -38,14 +38,14 @@ class Server():
 
             self.chunk_size = 1024
             
-	    print("HOST IS ONLINE: {}".format(host_ip))
+	    print("HOST IS ONLINE: {}:{}".format(host_ip, port))
 	    self.client_socket, address = self.server_socket.accept()
             print("CONNECTED TO: " + str(address[0]))
 
         except Exception as e:
             print(e)
             self.red_led.blink(2, 0.2)
-            #del self ## TEST THIS LINE
+            ## del self ## TEST THIS LINE
 
     def __del__(self):
         if self.client_socket:
@@ -55,8 +55,7 @@ class Server():
 	print("CLOSED CONNECTION SECURELY")
 
     def add_count_to_image_name(self):
-        self.client_image_name += self.image_count
-        self.server_image_name += self.image_count
+        return (self.client_image_prefix + self.image_count , self.server_image_prefix + self.image_count)
 
     def get_img_count(self):
         try:
@@ -73,9 +72,9 @@ class Server():
         except Exception as e:
             print(e)
 
-    def take_picture(self):
-        self.camera.capture(self.image_path + self.server_image_name + self.image_extension)
-	print ("IMAGE SAVED IN: {}".format(self.image_path + self.server_image_name + self.image_extension))
+    def take_picture(self, server_image_name):
+        self.camera.capture(self.image_path + server_image_name + self.image_extension)
+	print ("IMAGE SAVED IN: {}".format(self.image_path + server_image_name + self.image_extension))
    
     def send_count(self):
         self.client_socket.send(self.image_count)
@@ -88,7 +87,7 @@ class Server():
             #print("THE CLIENT DID NOT GET THE COUNT")
             return 0
 
-    def receive_image(self):
+    def receive_image(self, client_image_name):
         #print("WAITING FOR CLIENT TO SEND DATA")
         data = self.client_socket.recv(1024)
         if data.split(' ')[0] == 'SIZE':
@@ -96,7 +95,7 @@ class Server():
             #print("GOT SIZE: {}".format(img_size))
             self.client_socket.send("GOT SIZE")
 
-            image_full = self.image_path + self.client_image_name + self.image_extension
+            image_full = self.image_path + client_image_name + self.image_extension
             with open(image_full, 'wb') as img:
                 while True:
                     chunk_data = self.client_socket.recv(self.chunk_size)
@@ -104,19 +103,21 @@ class Server():
                         img.write(chunk_data[:-4])
                         break
                     img.write(chunk_data)
-
-            self.client_socket.send("IMAGE RECEIVED")
-            print("IMAGE RECEIVED SUCCESSFULLY")
-
+	    self.client_socket.send("IMAGE RECEIVED")	    
+	    print ("IMAGE SAVED IN: {}".format(image_full))
+            
     def run(self, number_images=True):
 	self.get_img_count()
         if number_images:
-            self.add_count_to_image_name()
-        self.send_count()
+            client_image_name, server_image_name = self.add_count_to_image_name()
+        else:
+	    client_image_name, server_image_name = self.client_image_prefix, self.server_image_prefix
+	self.send_count()
         self.green_led.turn_on()
-        self.take_picture()
-        self.receive_image()
+        self.take_picture(server_image_name)
+        self.receive_image(client_image_name)
         self.green_led.turn_off()
+	print 
 
 def main():
 

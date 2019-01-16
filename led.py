@@ -10,7 +10,7 @@ class Led():
         self.led_pin = led_pin
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.led_pin, GPIO.OUT)
-
+	GPIO.setwarnings(False)
     def __del__(self):
         GPIO.output(self.led_pin, False)
 

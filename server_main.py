@@ -8,44 +8,53 @@ from led import Led
 
 class Server():
     def __init__(self):
-        try:
-            port = 5002
-            host_ip = "22.22.22.22"
-            red_led_pin = 11
-            green_led_pin = 13
+        
+        port = 5002
+        host_ip = "22.22.22.22"
+        red_led_pin = 11
+        green_led_pin = 13
 
+        self.server_image_name = 'left'
+        self.client_image_name = 'right'
+        self.image_path = 'test_images/'
+        self.image_count = ''
+        self.image_extension = '.jpg'
+
+        self.red_led = Led(red_led_pin)
+        self.green_led = Led(green_led_pin)
+
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        self.client_socket = 0
+        
+        try:
             self.camera = PiCamera()
             self.camera.resolution = (640, 480)
-            self.server_image_name = 'left'
-            self.client_image_name = 'right'
-            self.image_path = 'test_images/'
-            self.image_count = ''
-            self.image_extension = '.jpg'
 
-            self.red_led = Led(red_led_pin)
-            self.green_led = Led(green_led_pin)
 
-            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.server_socket.bind((host_ip, port))
             self.server_socket.listen(5)
 
             self.chunk_size = 1024
-            self.client_socket, address = self.server_socket.accept()
-            print("Connected to - " + str(address))
+            
+	    print("HOST IS ONLINE: {}".format(host_ip))
+	    self.client_socket, address = self.server_socket.accept()
+            print("CONNECTED TO: " + str(address[0]))
 
         except Exception as e:
             print(e)
             self.red_led.blink(2, 0.2)
-            del self ## TEST THIS LINE
+            #del self ## TEST THIS LINE
 
     def __del__(self):
-        self.client_socket.close()
+        if self.client_socket:
+            self.client_socket.close()
         self.server_socket.close()
-        print("CLOSED CONNECTION SECURELY")
+        self.camera.close()
+	print("CLOSED CONNECTION SECURELY")
 
     def add_count_to_image_name(self):
-        self.get_img_count()
         self.client_image_name += self.image_count
         self.server_image_name += self.image_count
 
@@ -66,24 +75,25 @@ class Server():
 
     def take_picture(self):
         self.camera.capture(self.image_path + self.server_image_name + self.image_extension)
-
+	print ("IMAGE SAVED IN: {}".format(self.image_path + self.server_image_name + self.image_extension))
+   
     def send_count(self):
         self.client_socket.send(self.image_count)
-        print("SENDING IMAGE COUNT")
+        #print("SENDING IMAGE COUNT")
         reply = self.client_socket.recv(1024)
         if reply == "RECEIVED":
-            print("THE CLIENT GOT THE COUNT")
+            #print("THE CLIENT GOT THE COUNT")
             return 1
         else:
-            print("THE CLIENT DID NOT GET THE COUNT")
+            #print("THE CLIENT DID NOT GET THE COUNT")
             return 0
 
     def receive_image(self):
-        print("WAITING FOR CLIENT TO SEND DATA")
+        #print("WAITING FOR CLIENT TO SEND DATA")
         data = self.client_socket.recv(1024)
         if data.split(' ')[0] == 'SIZE':
             img_size = int(data.split(' ')[1])
-            print("GOT SIZE: {}".format(img_size))
+            #print("GOT SIZE: {}".format(img_size))
             self.client_socket.send("GOT SIZE")
 
             image_full = self.image_path + self.client_image_name + self.image_extension
@@ -99,6 +109,7 @@ class Server():
             print("IMAGE RECEIVED SUCCESSFULLY")
 
     def run(self, number_images=True):
+	self.get_img_count()
         if number_images:
             self.add_count_to_image_name()
         self.send_count()
@@ -112,12 +123,14 @@ def main():
     btn_pin = 7
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(btn_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setwarnings(False)
     server = Server()
 
     try:
         while True:
             if GPIO.input(btn_pin): ## Checking if the button is pressed
-                server.run(number_images=False) ## TEST TRUE OR FALSE
+               	print ("BUTTON PRESSED")
+		server.run(number_images=True) ## TEST TRUE OR FALSE
                 time.sleep(0.5)
             time.sleep(0.01)
 

@@ -14,8 +14,9 @@ class SendImageToServer():
 
             self.camera = PiCamera()
             self.camera.resolution = (640, 480)
-            self.image_name = 'slave'
+            self.image_prefix = 'right'
             self.image_path = 'test_images/'
+	    self.image_extension = '.jpg'
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         except Exception as e:
             print(e)
@@ -35,20 +36,20 @@ class SendImageToServer():
 		except Exception as e:
 			connected = False
 			print (e)
-			time.sleep(0.2)
+			time.sleep(0.5)
     def receive_name(self):
         image_count = self.client_socket.recv(1024)
 	self.client_socket.send("RECEIVED")
-        self.image_name += image_count + '.jpg'
+        return self.image_prefix + image_count
 
-    def take_picture(self):
-        self.camera.capture(self.image_path + self.image_name)
-        print ("THE IMAGE IS SAVED IN: {}".format(self.image_path + self.image_name))
+    def take_picture(self, image_name):
+        self.camera.capture(self.image_path + image_name + self.image_extension)
+        print ("THE IMAGE IS SAVED IN: {}".format(self.image_path + image_name + self.image_extension))
 
-    def send_image(self):
-        self.image_path += self.image_name
+    def send_image(self, image_name):
+        image_name_full = self.image_path + image_name + self.image_extension
 
-        with open(self.image_path, 'rb') as image:
+        with open(image_name_full, 'rb') as image:
             image_bytes = image.read()
             self.client_socket.send("SIZE " + str(len(image_bytes)))
             reply = self.client_socket.recv(1024)
@@ -68,11 +69,10 @@ class SendImageToServer():
     def run(self):
         """ After being connected to the server, get the image name and then take
         a picture and send it to the server"""
-        self.receive_name()
-        self.take_picture()
-        self.send_image()
-
-
+        image_name = self.receive_name()
+        self.take_picture(image_name)
+        self.send_image(image_name)
+	print 
 
 def main():
     """ Waits for the press of a button and executes accordingly"""

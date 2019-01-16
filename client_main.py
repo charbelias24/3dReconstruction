@@ -9,30 +9,41 @@ class SendImageToServer():
     """ Take and send images to the server on the press of a button"""
     def __init__(self):
         try:
-            port = 5002
-            host_ip = "22.22.22.22"
+            self.port = 5002
+            self.host_ip = "22.22.22.22"
 
             self.camera = PiCamera()
             self.camera.resolution = (640, 480)
             self.image_name = 'slave'
             self.image_path = 'test_images/'
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect((host_ip, port))
         except Exception as e:
             print(e)
 
     def __del__(self):
-        self.client_socket.close()
+        self.camera.close()
+	self.client_socket.close()
 
+    def connect_to_host(self):
+	connected = False
+	while not connected:
+		try:
+			print ("TRYING TO CONNECT TO HOST: {}:{}".format(self.host_ip, self.port))
+			self.client_socket.connect((self.host_ip, self.port))
+			connected = True
+			print ("CONNECTED TO HOST: {}:{}".format(self.host_ip, self.port))
+		except Exception as e:
+			connected = False
+			print (e)
+			time.sleep(0.2)
     def receive_name(self):
         image_count = self.client_socket.recv(1024)
-        self.client_socket.send("RECEIVED")
-        print ("RECEIVED NAME")
+	self.client_socket.send("RECEIVED")
         self.image_name += image_count + '.jpg'
 
     def take_picture(self):
         self.camera.capture(self.image_path + self.image_name)
-        print ("TAKING PICTURE")
+        print ("THE IMAGE IS SAVED IN: {}".format(self.image_path + self.image_name))
 
     def send_image(self):
         self.image_path += self.image_name
@@ -43,12 +54,12 @@ class SendImageToServer():
             reply = self.client_socket.recv(1024)
             if reply != "GOT SIZE":
                 return 0
-            print ("SENT SIZE")
+            #print ("SENT SIZE")
 
             self.client_socket.send(image_bytes)
             self.client_socket.send("DONE")
 
-        print ("DONE")
+        #print ("DONE")
         reply = self.client_socket.recv(1024)
         if reply == "IMAGE RECEIVED":
                 print ("IMAGE SENT SUCCESSFULLY")
@@ -69,13 +80,16 @@ def main():
     btn_pin = 7
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(btn_pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setwarnings(False)
     image_to_server = SendImageToServer()
 
     try:
-        while True:
+        image_to_server.connect_to_host()
+	while True:
             ## Checking if the button is pressed
             if GPIO.input(btn_pin):
-                image_to_server.run()
+                print ("BUTTON PRESSED")
+		image_to_server.run()
                 time.sleep(0.5)
             time.sleep(0.01)
     except Exception as e:

@@ -1,4 +1,4 @@
-# 3dReconstruction
+# 3D Reconstruction
 
 A DIY-box containing 2 Raspberry Pi cameras connected to a Raspberry Pi 3 to capture multiple stereo images and reconstruct a 3d pointcloud. 
 
